@@ -195,6 +195,7 @@ Proofs:
         assume(polling_time > 0)
         kdf_content = degree + 1
         encoding_time = layers * nodes * (kdf_content - 1) * kdf_hash_time * (node_size / kdf_hash_size)
+        encoding_time_mins = encoding_time / 60
         malicious_encoding = encoding_time / encoding_amax
         polling_time = malicious_encoding * drg_d
 
