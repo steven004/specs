@@ -263,7 +263,7 @@ Proofs:
 
     SpaceGap:
       assume(epsilon <= 0.24)
-      // delta = epsilon/2 <-- FIXME uncoomment.
+      delta <= epsilon/2
       spacegap = epsilon + 2 * delta
 
     Challenges:
