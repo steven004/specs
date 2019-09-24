@@ -34,6 +34,8 @@
     { "sector_size_gib": 32 },
     { "sector_size_gib": 64 },
     { "sector_size_gib": 128 },
-    { "sector_size_gib": 256 }
+    { "sector_size_gib": 256 },
+    { "sector_size_gib": 512 },
+    { "sector_size_gib": 1024 }
   ]
 ]
