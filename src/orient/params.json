@@ -3,7 +3,7 @@
     "degree_expander": 8,
     "degree_base": 6,
     "epsilon": 0.036,
-    "delta": 0.0016,
+    "delta": 0.016,
     "node_size": 32,
     "lambda": 80,
     "reseal": 0,
