@@ -352,6 +352,7 @@ ScalingRequirements:
   declare(chain_throughput_year)
 
   chain_size_year = block_size * blocks_in_a_year
+  block_size_kib = block_size / kib
 
   StorageCapacity:
     max_storage_network_capacity_year = 10 * eix
