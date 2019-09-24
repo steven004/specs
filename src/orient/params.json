@@ -31,6 +31,9 @@
     { "lambda": 10 }
   ],
   [
-    { "sector_size_gib": 64 }
+    { "sector_size_gib": 32 },
+    { "sector_size_gib": 64 },
+    { "sector_size_gib": 128 },
+    { "sector_size_gib": 256 }
   ]
 ]
