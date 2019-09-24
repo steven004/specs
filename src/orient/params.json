@@ -1,6 +1,5 @@
 [
   {
-    "expected_winning_miners": 1,
     "degree_expander": 8,
     "degree_base": 6,
     "epsilon": 0.072,
@@ -23,13 +22,18 @@
     "tx_messages_per_block": 0.3
   },
   [
-    { "lambda": 10 },
-    { "lambda": 80 }
+    { "expected_winning_miners": 1 },
+    { "expected_winning_miners": 2 },
+    { "expected_winning_miners": 3 },
+    { "expected_winning_miners": 5 },
+    { "expected_winning_miners": 10 },
+    { "expected_winning_miners": 20 },
+    { "expected_winning_miners": 30 }
   ],
   [
-    { "sector_size_gib": 1 },
-    { "sector_size_gib": 32 },
-    { "sector_size_gib": 64 },
-    { "sector_size_gib": 128 }
+    { "lambda": 10 }
+  ],
+  [
+    { "sector_size_gib": 64 }
   ]
 ]
