@@ -342,6 +342,7 @@ ChainBandwidth:
 
   Block Size:
     chain_size_year = block_size * blocks_in_a_year
+    chain_size_year_gib = chain_size_year / gib
     block_size_kib = block_size / kib
 
   Block Content:
@@ -356,6 +357,7 @@ ChainBandwidth:
       seal_size_per_block = avg_seals_messages_per_block * seal_proof_size
       post_size_per_block = avg_posts_messages_per_block * post_proof_size
       proofs_size_per_block = seal_size_per_block + post_size_per_block
+      proofs_size_per_block_kib = proofs_size_per_block / kib
 
     Composition:
       avg_proofs_messages_per_block = proof_messages_fraction * messages

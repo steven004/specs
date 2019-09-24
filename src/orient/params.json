@@ -23,12 +23,9 @@
   },
   [
     { "expected_winning_miners": 1 },
-    { "expected_winning_miners": 2 },
-    { "expected_winning_miners": 3 },
     { "expected_winning_miners": 5 },
-    { "expected_winning_miners": 10 },
-    { "expected_winning_miners": 20 },
-    { "expected_winning_miners": 30 }
+    { "expected_winning_miners": 30 },
+    { "expected_winning_miners": 50 }
   ],
   [
     { "lambda": 10 }
