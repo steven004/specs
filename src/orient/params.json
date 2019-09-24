@@ -8,7 +8,6 @@
     "node_size": 32,
     "reseal": 0,
     "proving_period_hours": 24,
-    "sector_size_gib": 32,
     "block_time": 15,
     "kdf_hash_time": 0.000000045608,
     "leaf_hash_time": 0.000000045608,
@@ -25,12 +24,12 @@
   },
   [
     { "lambda": 10 },
-    { "lambda": 80 },
+    { "lambda": 80 }
   ],
   [
-    { "sector_size": 1 },
-    { "sector_size": 32 },
-    { "sector_size": 64 },
-    { "sector_size": 128 }
+    { "sector_size_gib": 1 },
+    { "sector_size_gib": 32 },
+    { "sector_size_gib": 64 },
+    { "sector_size_gib": 128 }
   ]
 ]
