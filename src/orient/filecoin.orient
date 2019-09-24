@@ -223,8 +223,8 @@ Proofs:
 
       SNARK [SNARKAssumptions]:
         comm_d_openings = 1
-        comm_d_time = offline_challenges * (comm_d_openings * inclusion_circuit_time + leaf_circuit_time)
-        comm_d_constraints = offline_challenges * (comm_d_openings * inclusion_constraints + leaf_constraints)
+        comm_d_time = offline_challenges * (comm_d_openings * inclusion_circuit_time)
+        comm_d_constraints = offline_challenges * (comm_d_openings * inclusion_constraints)
 
         comm_r_openings = opening_per_challenge
         comm_r_time = offline_challenges * (comm_r_openings * inclusion_circuit_time + leaf_circuit_time)
