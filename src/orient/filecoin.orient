@@ -313,72 +313,53 @@ Consensus [ProofOfReplication, ProofOfSpacetime]:
     blocks_in_ten_years = blocks_in_a_year * 10
     one_block_in_ten_years = 1/blocks_in_ten_years
 
+StorageMarket:
+  declare(min_storing_time)
+  Deals (OnChainDeals):
+    comm_p_size = cid_size
+    declare(p_size, 1)
+    p_size = (log2(sector_size))
+    sector_manifest_size = pieces * comm_p_size + p_size
+    max_sector_manifest_hashes = sector_size / min_piece_size
+
+
 Mining:
-  declare(power_table_lookback)
-  declare(slashing_post_time)
-  // declare(reseal, integer)
+  proving_period_seconds = proving_period_hours * 60 * 60
 
   seals_per_sector_per_year = reseal+1
   posts_per_sector_per_year = year_in_seconds / proving_period_seconds
-  OnChainFootprint:
-    proving_period_seconds = proving_period_hours * 60 * 60
-    seals_size_per_sector_per_year = seals_per_sector_per_year * seal_proof_size
-    posts_size_per_sector_per_year = posts_per_sector_per_year * post_proof_size
-    proofs_size_per_sector_per_year = seals_size_per_sector_per_year + posts_size_per_sector_per_year
-    messages_per_sector_per_year = seals_per_sector_per_year + posts_per_sector_per_year
-    // assert(proofs_messages_per_year * )
-
-  StorageMarket:
-    declare(min_storing_time)
-    Deals (OnChainDeals):
-      comm_p_size = cid_size
-      declare(p_size, 1)
-      p_size = (log2(sector_size))
-      sector_manifest_size = pieces * comm_p_size + p_size
-      max_sector_manifest_hashes = sector_size / min_piece_size
-
-
-NetworkGoals:
-  DataPropagation: // TODO some network assumptions here
-    // block_time = ...
-    // block_framing_size = ...
-    declare(block_propagation_time)
-    declare(block_delay)
 
 ScalingRequirements:
-  declare(max_storage_network_capacity_year)
-  declare(seal_time)
-  declare(unseal_time)
-  declare(chain_throughput_year)
+  storage_network_capacity = 10 * eix
 
-  chain_size_year = block_size * blocks_in_a_year
-  block_size_kib = block_size / kib
+ChainBandwidth:
+  sectors_count = storage_network_capacity / sector_size
+  all_seal_messages_per_year = sectors_count * seals_per_sector_per_year
+  all_post_messages_per_year = sectors_count * posts_per_sector_per_year
+  all_seal_size_per_year = all_seal_messages_per_year
 
-  StorageCapacity:
-    max_storage_network_capacity_year = 10 * eix
-    max_sectors = max_storage_network_capacity_year / sector_size
+  Chain Size:
 
-    max_proofs_size_per_year = proofs_size_per_sector_per_year * max_sectors
-    max_proofs_messages_per_year = messages_per_sector_per_year * max_sectors
+  Block Size:
+    chain_size_year = block_size * blocks_in_a_year
+    chain_size_year_gib = chain_size_year / gib
+    block_size_kib = block_size / kib
 
-    proofs_size_per_block = max_proofs_size_per_year / blocks_in_a_year
-    proofs_messages_per_block = max_proofs_messages_per_year / blocks_in_a_year
-
+  Block Content:
     block_size = block_framing_size + proofs_size_per_block
-    messages = proofs_messages_per_block + tx_messages_per_block + actors_messages_per_block // TODO
+    messages = avg_proofs_messages_per_block + tx_messages_per_block + actors_messages_per_block // TODO messages dont include deals
 
-    non_proofs_messages_per_block = tx_messages_per_block + actors_messages_per_block
+    Proofs:
+      avg_proofs_messages_per_block = avg_seals_messages_per_block + avg_posts_messages_per_block
+      avg_seals_messages_per_block = all_seal_messages_per_year / blocks_in_a_year
+      avg_posts_messages_per_block = all_post_messages_per_year / blocks_in_a_year
 
-    // Fractions
-    proofs_messages_per_block = proof_messages_fraction * messages
-    tx_messages_per_block = tx_messages_fraction * messages
-    actors_messages_per_block = actors_messages_fraction * messages
+      seal_size_per_block = avg_seals_messages_per_block * seal_proof_size
+      post_size_per_block = avg_posts_messages_per_block * post_proof_size
+      proofs_size_per_block = seal_size_per_block + post_size_per_block
+      proofs_size_per_block_kib = proofs_size_per_block / kib
 
-
-    // TODO deal
-
-EconomicsRequirements:
-  declare(seal_cost)
-  declare(unseal_cost)
-  declare(year_mining_reward)
-  declare(min_hardware_cost)
+    Composition:
+      avg_proofs_messages_per_block = proof_messages_fraction * messages
+      tx_messages_per_block = tx_messages_fraction * messages
+      actors_messages_per_block = actors_messages_fraction * messages
