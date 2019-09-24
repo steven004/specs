@@ -1,9 +1,9 @@
 {
-    "expected_winning_miners": 1,
+      "expected_winning_miners": 1,
     "degree_expander": 8,
     "degree_base": 6,
-    "epsilon": 0.011,
-    "delta": 0.005,
+    "epsilon": 0.036,
+    "delta": 0.0016,
     "node_size": 32,
     "lambda": 80,
     "reseal": 0,
