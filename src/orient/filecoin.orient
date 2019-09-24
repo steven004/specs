@@ -34,7 +34,7 @@ Blockchain:
     block_framing_size = block_header_size + messages_size + receipts_size
 
     Messages:
-      declare(messages, integer) // TODO
+      // declare(messages, integer) // TODO
       messages_size = messages * message_size
       messages_root_cid = cid_size
 
@@ -62,17 +62,18 @@ Blockchain:
           actor_method = u64
 
     Receipts:
-      declare(receipts, integer) // TODO
+      receipts = messages // TODO check
+      // declare(receipts, integer) // TODO
       receipts_size = receipts * message_receipt
       message_receipts_cid = cid_size
 
       Receipt:
         message_receipt = exit_code + return + gas_used
-        declare(exit_code, bytes) // TODO
+        // declare(exit_code, bytes) // TODO
         exit_code = varint
-        declare(return, bytes) // TODO
+        // declare(return, bytes) // TODO
         return = varint
-        declare(gas_used, bytes) // TODO
+        // declare(gas_used, bytes) // TODO
         gas_used = u64
 
     BlockHeader (EC):
@@ -107,7 +108,7 @@ Blockchain:
       //   election_proof_size = 80
 
       Parents [CID]:
-        declare(parents, integer) // TODO
+        // declare(parents, integer) // TODO
         parents = expected_winning_miners
         parents_cids = parents * cid_size
 
@@ -116,19 +117,19 @@ Blockchain:
         bls_agg_size = 96
 
       Timestamp:
-        declare(timestamp_size, integer) // TODO
+        // declare(timestamp_size, integer) // TODO
         timestamp_size = u64
 
       // BlockSig (BlockSigSecpk):
-        declare(block_sig_size, integer) // TODO
-      //    block_sig_size = 80
+        // declare(block_sig_size, integer) // TODO
+        // block_sig_size = 80
 
       BlockSig (BlockSigBls):
         declare(block_sig_size, integer) // TODO
         block_sig_size = 96
 
       Tickets:
-        declare(tickets, integer)
+        // declare(tickets, integer)
         declare(tickets_size, bytes)
         tickets_size = ticket_size * tickets
         ticket_size = election_proof_size + vdf_proof_size + vdf_output_size
@@ -149,27 +150,27 @@ VDF (VDFRSA):
 Proofs:
   ProofOfReplication:
     Graph:
-      declare(node_size, integer)
-      declare(sector_size, integer)
-      declare(nodes, integer)
+      // declare(node_size, integer)
+      // declare(sector_size, integer)
+      // declare(nodes, integer)
       nodes = sector_size / node_size
       degree = degree_base + degree_expander
       sector_size_gib = sector_size / gib
 
       DRG (DRSample) [DRGAssumption]:
-        declare(degree_base, integer)
+        // declare(degree_base, integer)
         drg_e = 0.80
         drg_d = 1/4
 
       ExpanderParents (Chung) [ChungAssumption]:
-        declare(degree_expander, integer)
+        // declare(degree_expander, integer)
 
       Layers:
         // declare(layers, integer)
         assume(layers > 0)
 
     Soundness:
-      declare(lambda, integer)
+      // declare(lambda, integer)
       assume(soundness > 0)
       assume(soundness < 0.5)
       soundness = 1/(2^lambda)
@@ -181,7 +182,7 @@ Proofs:
     Challenges:
       OfflineChallenges:
         // declare(offline_challenges, integer)
-        declare(offline_challenges_all, integer)
+        // declare(offline_challenges_all, integer)
         assume(offline_challenges > 0)
 
       OnlineChallenges:
@@ -300,22 +301,22 @@ Proofs:
       post_snark_proof_size = post_snark_proof_partitions * snark_single_proof_size
 
 
-  Consensus [ProofOfReplication, ProofOfSpacetime]:
-    declare(expected_winning_miners, integer)
-    declare(finality_height, integer)
-    Tickets:
-      tickets = avg_tickets
-      avg_tickets = 1
-      min_tickets = 0
-      max_tickets = log(one_block_in_ten_years)/log(0.36) + 1 // 0.36^(max_tickets-1) = one_block_in_ten_years
-      blocks_in_a_year = (year_in_seconds / block_time) * expected_winning_miners
-      blocks_in_ten_years = blocks_in_a_year * 10
-      one_block_in_ten_years = 1/blocks_in_ten_years
+Consensus [ProofOfReplication, ProofOfSpacetime]:
+  // declare(expected_winning_miners, integer)
+  // declare(finality_height, integer)
+  Tickets:
+    tickets = avg_tickets
+    avg_tickets = 1
+    min_tickets = 0
+    max_tickets = log(one_block_in_ten_years)/log(0.36) + 1 // 0.36^(max_tickets-1) = one_block_in_ten_years
+    blocks_in_a_year = (year_in_seconds / block_time) * expected_winning_miners
+    blocks_in_ten_years = blocks_in_a_year * 10
+    one_block_in_ten_years = 1/blocks_in_ten_years
 
 Mining:
   declare(power_table_lookback)
   declare(slashing_post_time)
-  declare(reseal, integer)
+  // declare(reseal, integer)
 
   seals_per_sector_per_year = reseal+1
   posts_per_sector_per_year = year_in_seconds / proving_period_seconds
@@ -348,7 +349,9 @@ ScalingRequirements:
   declare(max_storage_network_capacity_year)
   declare(seal_time)
   declare(unseal_time)
-  declare(max_network_throughput_year)
+  declare(chain_throughput_year)
+
+  chain_size_year = block_size * blocks_in_a_year
 
   StorageCapacity:
     max_storage_network_capacity_year = 10 * eix
@@ -362,6 +365,14 @@ ScalingRequirements:
 
     block_size = block_framing_size + proofs_size_per_block
     messages = proofs_messages_per_block + tx_messages_per_block + actors_messages_per_block // TODO
+
+    non_proofs_messages_per_block = tx_messages_per_block + actors_messages_per_block
+
+    // Fractions
+    proofs_messages_per_block = proof_messages_fraction * messages
+    tx_messages_per_block = tx_messages_fraction * messages
+    actors_messages_per_block = actors_messages_fraction * messages
+
 
     // TODO deal
 

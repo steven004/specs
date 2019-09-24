@@ -19,5 +19,7 @@
     "merkle_hash_time": 0.000013078,
     "leaf_hash_circuit_time": 0.076994,
     "merkle_hash_constraints": 1300,
-    "kdf_hash_size": 32
+    "kdf_hash_size": 32,
+    "proof_messages_fraction": 0.4,
+    "tx_messages_per_block": 0.3
 }
