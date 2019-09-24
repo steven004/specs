@@ -226,13 +226,13 @@ Proofs:
         comm_d_time = offline_challenges * (comm_d_openings * inclusion_circuit_time)
         comm_d_constraints = offline_challenges * (comm_d_openings * inclusion_constraints)
 
-        comm_r_openings = opening_per_challenge
-        comm_r_time = offline_challenges * (comm_r_openings * inclusion_circuit_time + leaf_circuit_time)
-        comm_r_constraints = offline_challenges * (comm_r_openings * inclusion_constraints + leaf_constraints)
+        comm_r_openings = degree_base
+        comm_r_time = offline_challenges * (comm_r_openings * inclusion_circuit_time)
+        comm_r_constraints = offline_challenges * (comm_r_openings * inclusion_constraints)
 
         comm_c_openings = opening_per_challenge
-        comm_c_time = offline_challenges * (comm_c_openings * inclusion_circuit_time + leaf_circuit_time)
-        comm_c_constraints = offline_challenges * (comm_c_openings * inclusion_constraints + leaf_constraints)
+        comm_c_time = offline_challenges * (comm_c_openings * (inclusion_circuit_time + leaf_circuit_time))
+        comm_c_constraints = offline_challenges * (comm_c_openings * (inclusion_constraints + leaf_constraints))
 
         porep_snark_time = comm_d_time + comm_r_time + comm_c_time
         porep_snark_constraints = comm_d_constraints + comm_r_constraints + comm_c_constraints
