@@ -265,8 +265,10 @@ Proofs:
     SpaceGap:
       assume(epsilon <= 0.24)
       // delta < epsilon/2
-      delta = epsilon/2
-      spacegap = epsilon + 2 * delta
+      // delta = epsilon/2 + 0.001
+      // spacegap = epsilon + 2 * delta
+      spacegap = 2 * epsilon - 0.001
+      delta = epsilon/2 - 0.001
 
     Challenges:
       OfflineChallenges:
