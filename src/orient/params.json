@@ -28,10 +28,13 @@
   ]
   ,
   [
-    { "expected_winning_miners": 1 }
+    { "expected_winning_miners": 1 },
+    { "expected_winning_miners": 10 },
+    { "expected_winning_miners": 20 }
   ],
   [
-    { "lambda": 10 }
+    { "lambda": 10 },
+    { "lambda": 80 }
   ],
   [
     { "sector_size_gib": 32 },

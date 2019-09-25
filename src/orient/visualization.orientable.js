@@ -2,7 +2,7 @@ graph(solutions, 'spacegap', 'block_size_kib', ['sector_size_gib'])
 
 md`## Block size`
 
-table(solutions, ['block_size_kib', 'chain_size_year_gib'], ['sector_size_gib'], 'block_size_kib')
+table(solutions, ['expected_winning_miners', 'block_size_kib', 'chain_size_year_gib', 'spacegap'], ['sector_size_gib'], 'block_size_kib')
 
 md`## PoSt sizes`
 
@@ -16,11 +16,13 @@ graph(solutions, 'spacegap', 'post_size_per_block', ['sector_size_gib'])
 
 md`## PoRep in blockchain`
 
-graph(solutions, 'spacegap', 'seal_size_per_block', ['sector_size_gib'])
+graph(solutions, 'spacegap', 'seal_size_per_block', ['sector_size_gib', 'lambda'])
 
-// graph(solutions, 'expected_winning_miners', 'block_size_kib', ['sector_size_gib', 'spacegap'])
+graph(solutions, 'spacegap', 'block_size_kib', ['sector_size_gib', 'lambda'])
 
-// graph(solutions, 'sector_size_gib', 'block_size_kib', ['expected_winning_miners', 'spacegap'])
+md`## Interactivity`
+
+table(solutions, ['block_size_kib', 'sector_size_gib', 'spacegap'], ['lambda'])
 
 solutions = JSON.parse(await fetch_model('http://localhost:8000/solved-parameters.json'))
 
@@ -40,11 +42,14 @@ clean = (solutions, group_by, filter) => {
 }
 
 table = (solutions, filter, group_by, sort_by) => {
-  const results = clean(solutions, group_by, filter)
+  let results = clean(solutions, group_by, filter)
   if (sort_by) {
-    results.sort((a, b) => a[sort_by] > b[sort_by])
+    results = results.sort((a, b) => +a[sort_by] > +b[sort_by])
   }
-  const header = `| name | ${filter.join(' | ')} |`
+  const header = `
+  Sorted by: ${sort_by}
+
+  | name | ${filter.join(' | ')} |`
   const divider = `| --- | ${filter.map(f => '--:').join(' | ')} |`
   const rows = results.map(r => {
     return `| ${r.name} | ${filter.map(f => r[f]).join(' | ')}`
