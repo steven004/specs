@@ -17,28 +17,26 @@
     "merkle_hash_constraints": 1300,
     "kdf_hash_size": 32,
     "proof_messages_fraction": 0.4,
-    "tx_messages_fraction": 0.3
+    "tx_messages_fraction": 0.3,
+    "miners": 1000
   },
   [
-    { "spacegap": 0.01 },
-    { "spacegap": 0.02 },
-    { "spacegap": 0.03 }
+    { "spacegap": 0.03 },
+    { "spacegap": 0.06 },
+    { "spacegap": 0.1 },
+    { "spacegap": 0.2 }
   ]
   ,
   [
-    { "expected_winning_miners": 1 },
-    { "expected_winning_miners": 5 },
-    { "expected_winning_miners": 30 },
-    { "expected_winning_miners": 50 }
+    { "expected_winning_miners": 1 }
   ],
   [
     { "lambda": 10 }
   ],
   [
-    { "sector_size_gib": 64 },
+    { "sector_size_gib": 32 },
     { "sector_size_gib": 128 },
     { "sector_size_gib": 256 },
-    { "sector_size_gib": 512 },
     { "sector_size_gib": 1024 }
   ]
 ]

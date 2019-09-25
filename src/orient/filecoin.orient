@@ -337,9 +337,9 @@ ScalingRequirements:
 
 ChainBandwidth:
   sectors_count = storage_network_capacity / sector_size
-  all_seal_messages_per_year = sectors_count * seals_per_sector_per_year
-  all_post_messages_per_year = sectors_count * posts_per_sector_per_year
   all_seal_size_per_year = all_seal_messages_per_year
+  all_seal_messages_per_year = sectors_count * seals_per_sector_per_year
+  all_post_messages_per_year = sectors_count * posts_per_sector_per_year / miners
 
   Chain Size:
 
