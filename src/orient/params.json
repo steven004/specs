@@ -2,8 +2,6 @@
   {
     "degree_expander": 8,
     "degree_base": 6,
-    "epsilon": 0.072,
-    "delta": 0.032,
     "node_size": 32,
     "reseal": 0,
     "proving_period_hours": 24,
@@ -22,6 +20,12 @@
     "tx_messages_fraction": 0.3
   },
   [
+    { "spacegap": 0.01 },
+    { "spacegap": 0.02 },
+    { "spacegap": 0.03 }
+  ]
+  ,
+  [
     { "expected_winning_miners": 1 },
     { "expected_winning_miners": 5 },
     { "expected_winning_miners": 30 },
@@ -31,7 +35,6 @@
     { "lambda": 10 }
   ],
   [
-    { "sector_size_gib": 32 },
     { "sector_size_gib": 64 },
     { "sector_size_gib": 128 },
     { "sector_size_gib": 256 },
