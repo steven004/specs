@@ -320,7 +320,7 @@ Proofs:
 
     SpaceGap:
       assume(delta < 0.12)
-      4 * delta < epsilon
+      delta < epsilon / 4
       epsilon <= 0.24 + 2 * delta
       spacegap = epsilon
 
