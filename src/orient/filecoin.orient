@@ -180,7 +180,7 @@ Blockchain:
 SNARK [SNARKAssumptions]:
   declare(snark_single_proof_size, bytes)
   snark_single_proof_size = 192
-  snark_max_constraints = 100000000
+  snark_max_constraints = 2^27 
 
 // VDF (VDFStorageBased):
 //   vdf_proof_size = (vdf_snark_circuit / snark_max_constraints) * snark_single_proof_size
@@ -191,6 +191,7 @@ VDF (VDFRSA):
   vdf_output_size = 0
 
 Proofs:
+  interactive_lambda = lambda + biased_bits
   ProofOfReplication:
     Graph:
       // declare(node_size, integer)
@@ -216,7 +217,15 @@ Proofs:
       // declare(lambda, integer)
       assume(soundness > 0)
       assume(soundness < 0.5)
-      soundness = 1/(2^lambda)
+
+    Soundness (NonInteractivePorep):
+      porep_lambda = lambda
+      soundness = 1/(2^porep_lambda)
+
+    Soundness (InteractivePorep):
+      porep_lambda = interactive_lambda
+      soundness = 1/(2^porep_lambda)
+
 
     SpaceGap:
       assume(spacegap > 0)
@@ -224,9 +233,9 @@ Proofs:
 
     Challenges:
       OfflineChallenges:
-        // declare(offline_challenges, integer)
-        // declare(offline_challenges_all, integer)
-        assume(offline_challenges > 0)
+        // declare(offline_total_encodings, integer)
+        // declare(offline_total_encodings_all, integer)
+        assume(offline_total_encodings > 0)
 
       OnlineChallenges:
         // declare(online_challenges, integer)
@@ -251,7 +260,6 @@ Proofs:
 
     ProofGeneration (ColumnCommitments):
       assume(opening_time > 0)
-      openings = offline_challenges * opening_per_challenge
 
       Leaf:
         leaf_constraints =  layers * leaf_hash_constraints
@@ -275,35 +283,35 @@ Proofs:
         porep_snark_partitions = porep_snark_constraints / snark_max_constraints
         porep_snark_proof_size = porep_snark_partitions * snark_single_proof_size
 
-        proofgen_time = porep_snark_time
+        proofgen_time = porep_snark_time / snark_speedup
 
 
         Inclusions:
           comm_d_openings = 1
-          comm_d_time = offline_challenges * (comm_d_openings * inclusion_circuit_time)
-          comm_d_constraints = offline_challenges * (comm_d_openings * inclusion_constraints)
+          comm_d_time = offline_openings_per_layer * (comm_d_openings * inclusion_circuit_time)
+          comm_d_constraints = offline_openings_per_layer * (comm_d_openings * inclusion_constraints)
 
           comm_r_openings = degree_base
-          comm_r_time = offline_challenges * (comm_r_openings * inclusion_circuit_time)
-          comm_r_constraints = offline_challenges * (comm_r_openings * inclusion_constraints)
+          comm_r_time = offline_openings_per_layer * (comm_r_openings * inclusion_circuit_time)
+          comm_r_constraints = offline_openings_per_layer * (comm_r_openings * inclusion_constraints)
 
           comm_c_openings = opening_per_challenge
-          comm_c_time = offline_challenges * (comm_c_openings * (inclusion_circuit_time + leaf_circuit_time))
-          comm_c_constraints = offline_challenges * (comm_c_openings * (inclusion_constraints + leaf_constraints))
+          comm_c_time = offline_openings_per_layer * (comm_c_openings * (inclusion_circuit_time + leaf_circuit_time))
+          comm_c_constraints = offline_openings_per_layer * (comm_c_openings * (inclusion_constraints + leaf_constraints))
 
           comm_time = comm_d_time + comm_r_time + comm_c_time
           comm_constraints = comm_d_constraints + comm_r_constraints + comm_c_constraints
 
         Encoding:
-          enc_time = kdf_hash_time * kdf_content
-          enc_constraints = kdf_hash_circuit * kdf_content
+          enc_time = offline_total_encodings * kdf_hash_time_circuit * kdf_content
+          enc_constraints = offline_total_encodings * kdf_hash_constraints * kdf_content
 
     Size:
       seal_proof_size = porep_snark_proof_size + seal_commitments_size
 
     Time:
       seal_time = replica_commit_time + proofgen_time + encoding_time
-      parallel_seal_time = (porep_snark_time + commit_time)/cores + encoding_time
+      parallel_seal_time = (proofgen_time+ commit_time/cores) + encoding_time
       declare(unseal_time) // TODO
 
     Cost:
@@ -312,11 +320,16 @@ Proofs:
 
   ProofOfReplication (SDR):
     Graph:
-      Layers:
-        layers = layers_b // TODO max(layers_a, layers_b, layers_c) + 1
+      Layers (NoTapering):
+        layers = layers_b + 1 // TODO max(layers_a, layers_b, layers_c) + 1
         layers_a = (0.68 - epsilon + 4 * delta)/(0.12 - delta)
         layers_b = (log2(1 / (3 * (epsilon - 4 * delta)))) + 0.24 / (0.12 - delta) + 1
         layers_c = log2(2 / (1 + 3 * (epsilon - 5 * delta))) + (0.57 - epsilon + 3 * delta)/(0.12 - delta) + 1
+      Layers (Tapering):
+        layers = layers_b + 1 // TODO max(layers_a, layers_b, layers_c)
+        layers_a = (0.68 - epsilon + 2 * tapering_m + 2 * delta) + 2
+        layers_b = log2(2/(3 * (2 * epsilon - 3 * tapering_m - 5 * delta))) + (0.24 + tapering_m - delta)/(0.12 - m) + 1
+        layers_c = log2(2/(1 + 3 * (epsilon - 3 * tapering_m - 2 * delta))) + (0.57-epsilon + tapering_m + 2 * delta)/(0.12 - tapering_m) + 1
 
     SpaceGap:
       assume(delta < 0.12)
@@ -325,11 +338,15 @@ Proofs:
       spacegap = epsilon
 
     Challenges:
-      OfflineChallenges:
-        offline_challenges = (- lambda) / (log2(1 - delta))
+      OfflineChallenges (NoTapering):
+        offline_total_encodings = ((- porep_lambda) / (log2(1 - delta))) * layers
+        offline_openings_per_layer =  (- porep_lambda) / (log2(1 - delta))
+      OfflineChallenges (Tapering):
+        // offline_total_encodings = reduce(range(0, layers), (acc, curr) => -porep_lambda / log2(1 - min(delta * (3/2)^curr, tapering_m)))
+        // offline_openings_per_layer = (- porep_lambda) / (log2(1 - delta))
 
       OnlineChallenges:
-        online_challenges = (- lambda) / (log2(1 - epsilon / 2) - 1)
+        online_challenges = (- porep_lambda) / (log2(1 - epsilon / 2) - 1)
 
     ProofGeneration (ColumnCommitments):
       opening_per_challenge = degree_base + degree_expander + 1
@@ -352,20 +369,32 @@ Proofs:
 
   ProofOfSpacetime (RationalPoSt):
     Parameters:
-      post_challenges = online_challenges
       post_proving_period = proving_period_seconds / block_time
       describe(post_proving_period, "The time interval in which a PoSt has to be submitted", blocks)
 
-    Cost:
-      declare(post_proving_cost)
+    Challenges (CurrentPoSt):
+      post_challenges = online_challenges
+
+    Challenges (MultiSectorPoSt):
+      // TODO: this should be confirmed from research team
+      online_challenges_with_bias = (- post_lambda + log2(max_proving_sectors)) / (log2(1 - epsilon / 2) - 1)
+      post_challenges = online_challenges_with_bias
+
+    Challenges (ProofOfSectorPossession):
+      online_sectors_challenged = - post_lambda / log2(1 - epsilon + 2^(- post_lambda) * epsilon)
+      post_challenges = online_challenges * online_sectors_challenged
 
     SNARK:
-      post_snark_circuit = online_challenges * inclusion_constraints
+      post_snark_circuit = post_challenges * inclusion_constraints
 
     Size:
       post_proof_size = post_snark_proof_size
       post_snark_proof_partitions = 1 // TODO post_snark_circuit / snark_max_constraints
       post_snark_proof_size = post_snark_proof_partitions * snark_single_proof_size
+
+    Time:
+      // TODO: it should be calculated and divided by snark_speedup
+      post_proofgen
 
 
 Consensus [ProofOfReplication, ProofOfSpacetime]:
@@ -405,8 +434,6 @@ ChainBandwidth:
   all_seal_messages_per_year = sectors_count * seals_per_sector_per_year
   all_post_messages_per_year = sectors_count * posts_per_sector_per_year / miners
 
-  Chain Size:
-
   Block Size:
     chain_size_year = block_size * blocks_in_a_year
     chain_size_year_gib = chain_size_year / gib
@@ -420,7 +447,6 @@ ChainBandwidth:
       avg_proofs_messages_per_block = avg_seals_messages_per_block + avg_posts_messages_per_block
       avg_seals_messages_per_block = all_seal_messages_per_year / blocks_in_a_year
       avg_posts_messages_per_block = all_post_messages_per_year / blocks_in_a_year
-
       seal_size_per_block = avg_seals_messages_per_block * seal_proof_size
       post_size_per_block = avg_posts_messages_per_block * post_proof_size
       proofs_size_per_block = seal_size_per_block + post_size_per_block
@@ -430,3 +456,84 @@ ChainBandwidth:
       avg_proofs_messages_per_block = proof_messages_fraction * messages
       tx_messages_per_block = tx_messages_fraction * messages
       actors_messages_per_block = actors_messages_fraction * messages
+
+ConcreteParameters:
+  Compute:
+    single_threaded_bandwidth_gb_s_sha = (frequency / sha_cycles) / 1000
+    single_threaded_bandwidth_gb_s_blake2s = (frequency / blake2s_cycles) / 1000
+
+  Compute (HasGPU):
+    snark_speedup = 3.1
+
+  Compute (Ryzen):
+    frequency= 5000
+    sha_cycles = 2
+    blake2s_cycles = 5
+
+  Compute (Intel):
+    frequency = 5000
+    sha_cycles = 3
+    blake2s_cycles = 5
+
+  Compute (x86):
+    frequency= 5000
+    sha_cycles = 7.5
+    blake2s_cycles = 5
+
+  Compute (FPGA):
+    frequency= 450
+    sha_cycles = 1
+    blake2s_cycles = 0.3
+
+  Compute (ASIC):
+    frequency = 7500
+    sha_cycles = 1
+    blake2s_cycles = 0.3
+
+  Compute (SmartNIC):
+    frequency= 3500
+    sha_cycles = 1
+    blake2s_cycles = 0.3
+
+  // TODO put the right values
+  HashFunctions:
+    Blake2s:
+      blake2s_hash_constraints = 1200
+      // TODO: fix units
+      blake2s_hash_time = single_threaded_bandwidth_gb_s_blake2s
+      blake2s_hash_time_circuit
+    Pedersen:
+      pedersen_hash_constraints = 1200
+      pedersen_hash_time = 1
+      pedersen_hash_time_circuit
+    Sha2:
+      sha2_hash_constraints
+      // TODO: fix units
+      sha2_hash_time = single_threaded_bandwidth_gb_s_sha 
+      sha2_hash_time_circuit
+    Hash (Sha2KDF):
+      kdf_hash_constraints = sha2_hash_constraints
+      kdf_hash_time = sha2_hash_time
+      kdf_hash_time_circuit = sha2_hash_time_circuit
+   Hash (Blake2sKDF):
+      kdf_hash_constraints = blake2s_hash_constraints
+      kdf_hash_time = blake2s_hash_time
+      kdf_hash_time_circuit = blake2s_hash_time_circuit
+    Hash (Blake2sCommD):
+      comm_d_merkle_hash_constraints
+      comm_d_merkle_hash_time
+      comm_d_merkle_hash_time_circuit
+    Hash (Blake2sCommD):
+      comm_d_merkle_hash_constraints = blake2s_hash_constraints
+      comm_d_merkle_hash_time = blake2s_hash_time
+      comm_d_merkle_hash_time_circuit = blake2s_hash_time_circuit
+    Hash (PedersenMerkleTree):
+      merkle_hash_constraints = pedersen_hash_constraints
+      merkle_hash_time = pedersen_hash_time
+      merkle_hash_time_circuit = pedersen_hash_time_circuit
+    Hash (PoseidonMerkleTree):
+      merkle_hash_constraints = pedersen_hash_constraints/8
+      merkle_hash_time = pedersen_hash_time
+      merkle_hash_time_circuit = pedersen_hash_time_circuit/8
+ 
+// Time it takes to on-board x amount of storage given seal time
