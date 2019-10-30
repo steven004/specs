@@ -386,6 +386,8 @@ func (sdr *StackedDRG_I) VerifyPrivateProof(privateProof []OfflineSDRChallengePr
 	curveModulus := sdr.Curve().FieldModulus()
 	challenges := sdr.GenerateOfflineChallenges(sealSeeds, randomness, sdr.Challenges())
 
+	inclusionPathLength := UInt(math.Log2(float64(sdr.Nodes())))
+
 	// commC and commRLast must be the same for all challenge proofs, so we can arbitrarily verify against the first.
 	firstChallengeProof := privateProof[0]
 	commRLast := firstChallengeProof.ReplicaProof.InclusionProof.root()
@@ -405,7 +407,7 @@ func (sdr *StackedDRG_I) VerifyPrivateProof(privateProof []OfflineSDRChallengePr
 			columnProof := columnProofs[i]
 
 			// The provided column proofs must correspond to the expected columns.
-			if !columnProof.verify(commC, UInt(columnElement)) {
+			if !columnProof.verify(commC, UInt(columnElement), inclusionPathLength) {
 				return false
 			}
 		}
@@ -427,7 +429,7 @@ func (sdr *StackedDRG_I) VerifyPrivateProof(privateProof []OfflineSDRChallengePr
 		}
 
 		for i, dataProof := range dataProofs {
-			if !dataProof.verify(commD, challenge) {
+			if !dataProof.verify(commD, challenge, inclusionPathLength) {
 				return false
 			}
 			dataNode := dataProof.leaf()
@@ -444,7 +446,7 @@ func (sdr *StackedDRG_I) VerifyPrivateProof(privateProof []OfflineSDRChallengePr
 
 		}
 
-		if !replicaProof.verify(commRLast, challenge) {
+		if !replicaProof.verify(commRLast, challenge, inclusionPathLength) {
 			return false
 		}
 	}
@@ -555,7 +557,7 @@ func LoadMerkleTree(path file.Path) *MerkleTree {
 	panic("TODO")
 }
 
-func (ip *InclusionProof) verify(root []byte, challenge UInt) bool {
+func (ip *InclusionProof) verify(root []byte, challenge UInt, requiredPathLength UInt) bool {
 	panic("TODO")
 }
 
@@ -564,7 +566,7 @@ type SDRColumnProof struct {
 	InclusionProof InclusionProof
 }
 
-func (proof *SDRColumnProof) verify(root []byte, challenge UInt) bool {
+func (proof *SDRColumnProof) verify(root []byte, challenge UInt, requiredPathLength UInt) bool {
 	if !bytes.Equal(hashColumn(proof.Column), proof.InclusionProof.leaf()) {
 		return false
 	}
@@ -573,7 +575,7 @@ func (proof *SDRColumnProof) verify(root []byte, challenge UInt) bool {
 		return false
 	}
 
-	return proof.InclusionProof.verify(root, challenge)
+	return proof.InclusionProof.verify(root, challenge, requiredPathLength)
 }
 
 func (sdr *StackedDRG_I) CreateOfflineCircuitProof(challengeProofs []OfflineSDRChallengeProof, aux sector.ProofAuxTmp) sector.SealProof {
