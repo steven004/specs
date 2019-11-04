@@ -53,7 +53,10 @@ func DeserializeState(x Bytes) State {
 ////////////////////////////////////////////////////////////////////////////////
 
 // TODO: placeholder epoch value -- this will be set later
-const MAX_PROVE_COMMIT_SECTOR_EPOCH = block.ChainEpoch(3)
+const MAX_PROVE_COMMIT_SECTOR_PERIOD = block.ChainEpoch(3)
+const MAX_SURPRISE_POST_RESPONSE_PERIOD = block.ChainEpoch(4)
+const TWO_DAYS = 2 * 24 * 60 * 4
+const MIN_CHALLENGE_PERIOD = block.ChainEpoch(TWO_DAYS)
 
 func (st *SectorTable_I) ActivePower() block.StoragePower {
 	return block.StoragePower(st.ActiveSectors_ * util.UVarint(st.SectorSize_))
@@ -91,11 +94,31 @@ func (a *StorageMinerActorCode_I) _isChallenged(rt Runtime) bool {
 	return ret
 }
 
+func (cs *ChallengeStatus_I) ShouldChallenge(currEpoch block.ChainEpoch) bool {
+	// true when currEpoch > LastChallengeEpoch + MIN_CHALLENGE_PERIOD
+	return currEpoch > (cs.LastChallengeEpoch() + MIN_CHALLENGE_PERIOD)
+}
+
+func (st *StorageMinerActorState_I) _shouldChallenge(rt Runtime) bool {
+	return st.ChallengeStatus().ShouldChallenge(rt.CurrEpoch())
+}
+
+func (a *StorageMinerActorCode_I) _shouldChallenge(rt Runtime) bool {
+	h, st := a.State(rt)
+	ret := st._shouldChallenge(rt)
+	Release(rt, h, st)
+	return ret
+}
+
 // called by CronActor to notify StorageMiner of PoSt Surprise Challenge
 func (a *StorageMinerActorCode_I) NotifyOfPoStSurpriseChallenge(rt Runtime) InvocOutput {
 	rt.ValidateCallerIs(addr.CronActorAddr)
 
 	if a._isChallenged(rt) {
+		return rt.SuccessReturn() // silent return, dont re-challenge
+	}
+
+	if !a._shouldChallenge(rt) {
 		return rt.SuccessReturn() // silent return, dont re-challenge
 	}
 
@@ -189,10 +212,12 @@ func (a *StorageMinerActorCode_I) _onMissedPoSt(rt Runtime) {
 	UpdateRelease(rt, h, st)
 }
 
-// If a Post is missed (either due to faults being not declared on time or
+// If a SurprisePoSt is missed (either due to faults being not declared on time or
 // because the miner run out of time, every sector is reported as failing
 // for the current proving period.
-func (a *StorageMinerActorCode_I) CheckPoStSubmissionHappened(rt Runtime) InvocOutput {
+// TODO: verify that it is okay for an ElectionPoSt submission to be used as a SurprisePoSt submission
+// because an ElectionPoSt will also get a miner out of Challenged status and update LastChallengeEpoch
+func (a *StorageMinerActorCode_I) CheckSurprisePoStSubmissionHappened(rt Runtime) InvocOutput {
 	TODO() // TODO: validate caller
 
 	if !a._isChallenged(rt) {
@@ -234,7 +259,7 @@ func (a *StorageMinerActorCode_I) _expirePreCommittedSectors(rt Runtime) {
 	for _, preCommitSector := range st.PreCommittedSectors() {
 
 		elapsedEpoch := rt.CurrEpoch() - preCommitSector.ReceivedEpoch()
-		if elapsedEpoch > MAX_PROVE_COMMIT_SECTOR_EPOCH {
+		if elapsedEpoch > MAX_PROVE_COMMIT_SECTOR_PERIOD {
 			delete(st.PreCommittedSectors(), preCommitSector.Info().SectorNumber())
 			// TODO: potentially some slashing if ProveCommitSector comes late
 		}
@@ -696,8 +721,8 @@ func (a *StorageMinerActorCode_I) ProveCommitSector(rt Runtime, info sector.Sect
 	// check if ProveCommitSector comes too late after PreCommitSector
 	elapsedEpoch := rt.CurrEpoch() - preCommitSector.ReceivedEpoch()
 
-	// if more than MAX_PROVE_COMMIT_SECTOR_EPOCH has elapsed
-	if elapsedEpoch > MAX_PROVE_COMMIT_SECTOR_EPOCH {
+	// if more than MAX_PROVE_COMMIT_SECTOR_PERIOD has elapsed
+	if elapsedEpoch > MAX_PROVE_COMMIT_SECTOR_PERIOD {
 		// TODO: potentially some slashing if ProveCommitSector comes late
 
 		// expired
