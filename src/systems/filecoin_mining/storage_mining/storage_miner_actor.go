@@ -68,8 +68,8 @@ func (cs *ChallengeStatus_I) OnNewChallenge(currEpoch block.ChainEpoch) Challeng
 	return cs
 }
 
-// Call by either SubmitPoSt or OnMissedPoSt
-// TODO: verify this is correct and if we need to distinguish SubmitPoSt vs OnMissedPoSt
+// Call by _onSuccessfulPoSt / _onMissedPoSt
+// TODO: verify this is correct and if we need to distinguish _onSuccessfulPoSt vs _onMissedPoSt
 func (cs *ChallengeStatus_I) OnChallengeResponse(currEpoch block.ChainEpoch) ChallengeStatus {
 	cs.LastChallengeEndEpoch_ = currEpoch
 	return cs
@@ -91,8 +91,8 @@ func (a *StorageMinerActorCode_I) _isChallenged(rt Runtime) bool {
 	return ret
 }
 
-// called by CronActor to notify StorageMiner of PoSt Challenge
-func (a *StorageMinerActorCode_I) NotifyOfPoStChallenge(rt Runtime) InvocOutput {
+// called by CronActor to notify StorageMiner of PoSt Surprise Challenge
+func (a *StorageMinerActorCode_I) NotifyOfPoStSurpriseChallenge(rt Runtime) InvocOutput {
 	rt.ValidateCallerIs(addr.CronActorAddr)
 
 	if a._isChallenged(rt) {
@@ -102,7 +102,7 @@ func (a *StorageMinerActorCode_I) NotifyOfPoStChallenge(rt Runtime) InvocOutput 
 	a._expirePreCommittedSectors(rt)
 
 	h, st := a.State(rt)
-	st.ChallengeStatus().Impl().LastChallengeEpoch_ = rt.CurrEpoch()
+	st.ChallengeStatus().Impl().OnNewChallenge(rt.CurrEpoch())
 	UpdateRelease(rt, h, st)
 
 	return rt.SuccessReturn()
@@ -341,8 +341,7 @@ func (st *StorageMinerActorState_I) _updateFailSector(rt Runtime, sectorNo secto
 // TODO: decide whether declared faults sectors should be
 // penalized in the same way as undeclared sectors and how
 
-// SubmitPoSt Workflow:
-// - Verify PoSt Submission
+// this method is called by both SubmitElectionPoSt and SubmitSurprisePoSt
 // - Process ProvingSet.SectorsOn()
 //   - State Transitions
 //     - Committed -> Active and credit power
@@ -355,22 +354,8 @@ func (st *StorageMinerActorState_I) _updateFailSector(rt Runtime, sectorNo secto
 //     - State Transition
 //       - Failing / Recovering / Active / Committed -> Cleared
 //     - Remove SectorNumber from Sectors, ProvingSet
-func (a *StorageMinerActorCode_I) SubmitPoSt(rt Runtime, postSubmission poster.PoStSubmission) InvocOutput {
-	TODO() // TODO: validate caller
-
-	if !a._isChallenged(rt) {
-		// TODO: determine proper error here and error-handling machinery
-		rt.Abort("cannot SubmitPoSt when not challenged")
-	}
-
-	// Verify correct PoSt Submission
-	isPoStVerified := a._verifyPoStSubmission(rt, postSubmission)
-	if !isPoStVerified {
-		// no state transition, just error out and miner should submitPoSt again
-		// TODO: determine proper error here and error-handling machinery
-		rt.Abort("TODO")
-	}
-
+// - Update ChallengeEndEpoch
+func (a *StorageMinerActorCode_I) _onSuccessfulPoSt(rt Runtime, postSubmission poster.PoStSubmission) InvocOutput {
 	h, st := a.State(rt)
 
 	// The proof is verified, process ProvingSet.SectorsOn():
@@ -447,6 +432,42 @@ func (a *StorageMinerActorCode_I) SubmitPoSt(rt Runtime, postSubmission poster.P
 	UpdateRelease(rt, h, st)
 
 	return rt.SuccessReturn()
+
+}
+
+// Called by StoragePowerConsensus subsystem after verifying the Election proof
+// and verifying the PoSt proof within the block. (this happens outside the VM)
+// Assume ElectionPoSt has already been successfully verified when the function gets called.
+func (a *StorageMinerActorCode_I) SubmitElectionPoSt(rt Runtime, postSubmission poster.PoStSubmission) InvocOutput {
+
+	h, st := a.State(rt)
+	st.ChallengeStatus().Impl().OnNewChallenge(rt.CurrEpoch())
+	UpdateRelease(rt, h, st)
+
+	return a._onSuccessfulPoSt(rt, postSubmission)
+
+}
+
+// SubmitSurprisePoSt Workflow:
+// - Verify PoSt Submission
+// - Process successful PoSt
+func (a *StorageMinerActorCode_I) SubmitSurprisePoSt(rt Runtime, postSubmission poster.PoStSubmission) InvocOutput {
+	TODO() // TODO: validate caller
+
+	if !a._isChallenged(rt) {
+		// TODO: determine proper error here and error-handling machinery
+		rt.Abort("cannot SubmitSurprisePoSt when not challenged")
+	}
+
+	// Verify correct PoSt Submission
+	isPoStVerified := a._verifyPoStSubmission(rt, postSubmission)
+	if !isPoStVerified {
+		// no state transition, just error out and miner should submitSurprisePoSt again
+		// TODO: determine proper error here and error-handling machinery
+		rt.Abort("TODO")
+	}
+
+	return a._onSuccessfulPoSt(rt, postSubmission)
 }
 
 func (st *StorageMinerActorState_I) _updateExpireSectors(rt Runtime) {
@@ -621,7 +642,6 @@ func (st *StorageMinerActorState_I) _sectorExists(sectorNo sector.SectorNumber) 
 func (a *StorageMinerActorCode_I) PreCommitSector(rt Runtime, info sector.SectorPreCommitInfo) InvocOutput {
 	TODO() // TODO: validate caller
 
-	// no checks needed
 	// can be called regardless of Challenged status
 
 	// TODO: might record CurrEpoch for PreCommitSector expiration
