@@ -44,15 +44,16 @@ For more on Tipsets, see {{<sref expected_consensus "the Expected Consensus spec
 {{<goFile TipSet>}}
 
 
-# VRF Personalization
+# Domain Separation Tags
 
-We define VRF personalizations as follow, to enable domain separation across operations that make use of the same VRF (e.g. `Ticket` and
+We define domain separation tags as follow, to enable domain separation across operations that make use of the same VRF (e.g. `Ticket`, `Block` and
 `ElectionProof`).
 
 | Type          | Prefix |
 | ------------- | ------ |
 | Ticket        | `0x01` |
 | ElectionProof | `0x02` |
+| Block         | `0x03` |
 
 
 # Ticket
