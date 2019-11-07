@@ -61,6 +61,8 @@ func (sms *StorageMiningSubsystem_I) tryLeaderElection() {
 	T1 := sms.consensus().GetTicketProductionSeed(sms.blockchain().BestChain(), sms.blockchain().LatestEpoch())
 	TK := sms.consensus().GetElectionProofSeed(sms.blockchain().BestChain(), sms.blockchain().LatestEpoch())
 
+	T1 = append([]byte("TICKET"), T1...)
+	TK = append([]byte("ELECTION"), TK...)
 	for _, worker := range sms.keyStore().Workers() {
 		newTicket := sms.PrepareNewTicket(T1, worker.VRFKeyPair())
 		newEP := sms.DrawElectionProof(TK, sms.blockchain().LatestEpoch(), worker.VRFKeyPair())
@@ -76,6 +78,7 @@ func (sms *StorageMiningSubsystem_I) PrepareNewTicket(priorTicket block.Ticket, 
 
 	// take the VRFResult of that ticket as input, specifying the personalization (see data structures)
 	var input []byte
+	input = append(input, []byte("TICKET")...)
 	input = append(input, spc.VRFPersonalizationTicket)
 	input = append(input, priorTicket.Output()...)
 
@@ -97,6 +100,7 @@ func (sms *StorageMiningSubsystem_I) DrawElectionProof(lookbackTicket block.Tick
 
 	// // 1. Run it through VRF and get determinstic output
 	// // 1.i. # take the VRFOutput of that ticket as input, specified for the appropriate operation type
+	// input := []byte("ELECTION")
 	// input := VRFPersonalization.ElectionProof
 	// input.append(lookbackTicket.Output)
 	// input.append(height)
