@@ -51,9 +51,9 @@ We define domain separation tags as follow, to enable domain separation across o
 
 | Type          | Prefix |
 | ------------- | ------ |
-| Ticket        | `0x01` |
-| ElectionProof | `0x02` |
-| Block         | `0x03` |
+| Ticket        | `0x00` |
+| ElectionProof | `0x01` |
+| Block         | `0x02` |
 
 
 # Ticket

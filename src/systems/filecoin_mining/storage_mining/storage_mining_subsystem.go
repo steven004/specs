@@ -5,7 +5,6 @@ package storage_mining
 import (
 	filcrypto "github.com/filecoin-project/specs/algorithms/crypto"
 	libp2p "github.com/filecoin-project/specs/libraries/libp2p"
-	spc "github.com/filecoin-project/specs/systems/filecoin_blockchain/storage_power_consensus"
 	block "github.com/filecoin-project/specs/systems/filecoin_blockchain/struct/block"
 	deal "github.com/filecoin-project/specs/systems/filecoin_markets/deal"
 	addr "github.com/filecoin-project/specs/systems/filecoin_vm/actor/address"
@@ -61,8 +60,6 @@ func (sms *StorageMiningSubsystem_I) tryLeaderElection() {
 	T1 := sms.consensus().GetTicketProductionSeed(sms.blockchain().BestChain(), sms.blockchain().LatestEpoch())
 	TK := sms.consensus().GetElectionProofSeed(sms.blockchain().BestChain(), sms.blockchain().LatestEpoch())
 
-	T1 = append([]byte(filcrypto.TicketTag), T1...)
-	TK = append([]byte(filcrypto.ElectionTag), TK...)
 	for _, worker := range sms.keyStore().Workers() {
 		newTicket := sms.PrepareNewTicket(T1, worker.VRFKeyPair())
 		newEP := sms.DrawElectionProof(TK, sms.blockchain().LatestEpoch(), worker.VRFKeyPair())
@@ -78,8 +75,7 @@ func (sms *StorageMiningSubsystem_I) PrepareNewTicket(priorTicket block.Ticket, 
 
 	// take the VRFResult of that ticket as input, specifying the personalization (see data structures)
 	var input []byte
-	input = append(input, []byte(filcrypto.TicketTag)...)
-	input = append(input, spc.VRFPersonalizationTicket)
+	input := filcrypto.TicketTag
 	input = append(input, priorTicket.Output()...)
 
 	// run through VRF
@@ -100,10 +96,10 @@ func (sms *StorageMiningSubsystem_I) DrawElectionProof(lookbackTicket block.Tick
 
 	// // 1. Run it through VRF and get determinstic output
 	// // 1.i. # take the VRFOutput of that ticket as input, specified for the appropriate operation type
-	// input := []byte(filcrypto.ElectionTag)
-	// input := VRFPersonalization.ElectionProof
-	// input.append(lookbackTicket.Output)
-	// input.append(height)
+	// var input []byte
+	// input = append (input, filcrypto.ElectionTag)
+	// input = append(input, lookbackTicket.Output)
+	// input = append(input, height)
 	// // ii. # run it through the VRF and store the VRFProof in the new ticket
 	// newEP.VRFResult := vrfKP.Generate(input)
 	// return newEP
