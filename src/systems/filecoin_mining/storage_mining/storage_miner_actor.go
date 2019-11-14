@@ -3,17 +3,17 @@ package storage_mining
 import actor "github.com/filecoin-project/specs/systems/filecoin_vm/actor"
 import addr "github.com/filecoin-project/specs/systems/filecoin_vm/actor/address"
 import block "github.com/filecoin-project/specs/systems/filecoin_blockchain/struct/block"
-import filproofs "github.com/filecoin-project/specs/libraries/filcrypto/filproofs"
-import storage_market "github.com/filecoin-project/specs/systems/filecoin_markets/storage_market"
+import exitcode "github.com/filecoin-project/specs/systems/filecoin_vm/runtime/exitcode"
 import ipld "github.com/filecoin-project/specs/libraries/ipld"
+import filproofs "github.com/filecoin-project/specs/libraries/filcrypto/filproofs"
 import msg "github.com/filecoin-project/specs/systems/filecoin_vm/message"
 import poster "github.com/filecoin-project/specs/systems/filecoin_mining/storage_proving/poster"
 import power "github.com/filecoin-project/specs/systems/filecoin_blockchain/storage_power_consensus"
 import sector "github.com/filecoin-project/specs/systems/filecoin_mining/sector"
+import storage_market "github.com/filecoin-project/specs/systems/filecoin_markets/storage_market"
+import deal "github.com/filecoin-project/specs/systems/filecoin_markets/deal"
 import util "github.com/filecoin-project/specs/util"
 import vmr "github.com/filecoin-project/specs/systems/filecoin_vm/runtime"
-import exitcode "github.com/filecoin-project/specs/systems/filecoin_vm/runtime/exitcode"
-import deal "github.com/filecoin-project/specs/systems/filecoin_markets/deal"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Boilerplate
@@ -675,7 +675,7 @@ func (a *StorageMinerActorCode_I) DeclareFaults(rt Runtime, faultSet sector.Comp
 	return rt.SuccessReturn()
 }
 
-func (a *StorageMinerActorCode_I) CreditSectorDealPayment(rt Runtime, sectorNo sector.SectorNumber) {
+func (a *StorageMinerActorCode_I) TallySectorDealPayment(rt Runtime, sectorNo sector.SectorNumber) {
 	TODO() // verify caller
 
 	h, st := a.State(rt)
@@ -690,7 +690,7 @@ func (a *StorageMinerActorCode_I) CreditSectorDealPayment(rt Runtime, sectorNo s
 	activeDealSet := utilizationInfo.DealExpirationQueue().ActiveDealIDs()
 	batchDealPaymentInfo := &deal.BatchDealPaymentInfo_I{
 		DealIDs_:               activeDealSet.DealsOn(),
-		Action_:                deal.CreditStorageDeals,
+		Action_:                deal.TallyStorageDeals,
 		LastChallengeEndEpoch_: st.ChallengeStatus().LastChallengeEndEpoch(),
 	}
 
