@@ -476,3 +476,7 @@ func (rt *VMContext) CurrEpoch() block.ChainEpoch {
 func (rt *VMContext) AcquireState() ActorStateHandle {
 	panic("TODO")
 }
+
+func (rt *VMContext) CurrMethodNum() actor.MethodNum {
+	panic("TODO")
+}
