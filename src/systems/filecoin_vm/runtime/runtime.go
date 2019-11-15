@@ -1,6 +1,7 @@
 package runtime
 
 import block "github.com/filecoin-project/specs/systems/filecoin_blockchain/struct/block"
+import filcrypto "github.com/filecoin-project/specs/algorithms/crypto"
 import ipld "github.com/filecoin-project/specs/libraries/ipld"
 import st "github.com/filecoin-project/specs/systems/filecoin_vm/state_tree"
 import msg "github.com/filecoin-project/specs/systems/filecoin_vm/message"
@@ -83,7 +84,7 @@ func VMContext_Make(
 	valueReceived actor.TokenAmount,
 	gasRemaining msg.GasAmount) *VMContext {
 
-	actorStateInit := globalState.GetActor(actorAddress).State()
+	actorStateInit := globalState.GetActorState(actorAddress)
 
 	return &VMContext{
 		_globalStateInit:        globalState,
@@ -153,7 +154,7 @@ func (rt *VMContext) _releaseActorSubstate(checkStateCID ActorSubstateCID) {
 	rt._checkRunning()
 	rt._checkActorStateAcquired()
 
-	prevState := rt._globalStatePending.GetActor(rt._actorAddress).State()
+	prevState := rt._globalStatePending.GetActorState(rt._actorAddress)
 	prevStateCID := prevState.State()
 	if !ActorSubstateCID_Equals(prevStateCID, checkStateCID) {
 		rt.Abort("State CID differs upon release call")
@@ -379,7 +380,7 @@ func (rtOuter *VMContext) _sendInternal(input InvocInput, catchErrors bool) msg.
 	rtOuter._checkRunning()
 	rtOuter._checkStateLock(false)
 
-	toActor := rtOuter._globalStatePending.GetActor(input.To()).State()
+	toActor := rtOuter._globalStatePending.GetActorState(input.To())
 
 	toActorCode, err := loadActorCode(toActor.CodeID())
 	if err != nil {
@@ -479,4 +480,27 @@ func (rt *VMContext) AcquireState() ActorStateHandle {
 
 func (rt *VMContext) CurrMethodNum() actor.MethodNum {
 	panic("TODO")
+}
+
+func (rt *VMContext) VerifySignature(signerActor addr.Address, sig filcrypto.Signature, m filcrypto.Message) bool {
+	st := rt._globalStatePending.Impl().GetActorState(signerActor)
+	if st == nil {
+		rt.Abort("VerifySignature: signer actor not found")
+	}
+	pk := st.GetSignaturePublicKey()
+	if pk == nil {
+		rt.Abort("VerifySignature: signer actor has no public key")
+	}
+	ret := rt.Compute(ComputeFunctionID_VerifySignature, []Any{pk, sig, m})
+	return ret.(bool)
+}
+
+func (rt *VMContext) Compute(f ComputeFunctionID, args []Any) Any {
+	def, found := _computeFunctionDefs[f]
+	if !found {
+		rt.Abort("Function definition in rt.Compute() not found")
+	}
+	gasCost := def.GasCostFn(args)
+	rt._deductGasRemaining(gasCost)
+	return def.Body(args)
 }
